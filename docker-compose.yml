@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  producer:
+    build: ./Producer
+    container_name: log-producer
+
+  consumer:
+    build: ./Consumer
+    container_name: log-consumer
