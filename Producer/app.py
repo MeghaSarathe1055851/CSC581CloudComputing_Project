@@ -1,0 +1,1 @@
+print("Producer service starting")
