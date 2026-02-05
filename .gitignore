@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Docker
+.docker/
+
+# Log files
+*.log
+logs/
+data/

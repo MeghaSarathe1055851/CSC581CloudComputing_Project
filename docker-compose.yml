@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Message Queue for asynchronous communication
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: log-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP protocol port
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - logging-network
+
+  # Log Producer Service - Accepts logs via REST API
+  producer:
+    build: ./producer
+    container_name: log-producer
+    ports:
+      - "5000:5000"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - logging-network
+    restart: unless-stopped
+
+  # Log Processor Service - Processes logs from queue
+  processor:
+    build: ./processor
+    container_name: log-processor
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      STORAGE_HOST: storage
+      STORAGE_PORT: 5002
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      storage:
+        condition: service_started
+    networks:
+      - logging-network
+    restart: unless-stopped
+
+  # Log Storage Service - Stores processed logs
+  storage:
+    build: ./storage
+    container_name: log-storage
+    ports:
+      - "5002:5002"
+    environment:
+      STORAGE_DIR: /data/logs
+    volumes:
+      - log-data:/data/logs
+    networks:
+      - logging-network
+    restart: unless-stopped
+
+networks:
+  logging-network:
+    driver: bridge
+
+volumes:
+  log-data:
+    driver: local
