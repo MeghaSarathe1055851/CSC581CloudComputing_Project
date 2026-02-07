@@ -22,7 +22,7 @@ All interaction is done via standard MongoDB protocol — no shared volumes or m
 ### Architecture Diagram
 ![Architecture Diagram](docs/architecture.png)
 
-*(Click the image to view full size. The diagram is also saved in editable format.)*
+*(Click the image to view full size.)*
 ## Proposal
 
 ### Planned Components and Base Images
