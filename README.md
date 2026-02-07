@@ -1,41 +1,43 @@
 # CSC581 – Cloud Computing Project  
-## Event-Driven Cloud Logging Platform
+# Personalized Recipe Suggestion Engine
 
-This project implements an event-driven cloud logging platform designed to demonstrate infrastructure-focused cloud deployment using containerization. The emphasis of this project is on system architecture, container orchestration, and infrastructure-as-code concepts rather than complex application logic.
+A containerized microservice that suggests recipes based on a list of available ingredients.  
+Built with **Go** (backend API) + **MongoDB** (recipe storage), orchestrated using Docker Compose.
 
 ## Vision
 
-The goal of this project is to build a distributed logging system where multiple services communicate asynchronously using containerized infrastructure. The system is composed of decoupled components to reflect real-world cloud deployments that prioritize scalability, fault tolerance, and service isolation.
+The system consists of two main components:
 
-### Architecture Overview
+- **Go Backend API**  
+  A custom HTTP server that exposes a REST endpoint (e.g., `POST /recipes/suggest`).  
+  It receives a list of ingredients from the client and returns a list of matching recipe suggestions.
 
-+-------------+        TCP / Message Queue       +--------------+
-|  Producer   |  ------------------------------> |  Consumer    |
-| (Log Source)|                                  | (Processor)  |
-+-------------+                                  +--------------+
+- **MongoDB Database**  
+  Stores a collection of recipes (name, ingredients, instructions, tags, etc.).
 
+**How they communicate**:  
+The Go backend connects to MongoDB using the official MongoDB Go driver over TCP (default port 27017).  
+All interaction is done via standard MongoDB protocol — no shared volumes or message queues needed.
 
-- The **Producer** service simulates applications generating log events.
-- The **Consumer** service receives and processes these log events.
-- Communication between components occurs over a TCP-based messaging mechanism, allowing loose coupling between services.
+### Architecture Diagram
+![Architecture Diagram](docs/architecture.png)
 
-This architecture mirrors event-driven systems commonly used in cloud environments for logging, monitoring, and data processing.
-
+*(Click the image to view full size. The diagram is also saved in editable format.)*
 ## Proposal
 
-The system will be implemented using Docker containers and orchestrated via `docker-compose` to deploy multiple services in isolated environments.
+### Planned Components and Base Images
 
-### Planned Base Images
+- **Go Backend**  
+  - Build stage base image: `golang:1.23-alpine`  
+  - Final runtime image: `alpine:3.20` (or `scratch` for even smaller size)  
+  - Approach: Multi-stage Dockerfile — compile the Go binary in the builder stage, then copy only the static binary into a minimal final image.  
+  - Reason: Produces a very small, secure image with almost no dependencies or attack surface.
 
-- **Producer Service:** `python:3.11-slim`  
-- **Consumer Service:** `python:3.11-slim`  
-- **Message Broker (planned):** Official Redis image  
+- **MongoDB**  
+  - Base image: `mongo:7.0` (official image from Docker Hub)  
+  - Reason: Stable, well-maintained, includes built-in healthcheck support, and is the standard choice for MongoDB deployments.
 
-These lightweight base images are chosen to minimize container size while maintaining compatibility with CloudLab environments. At least one custom Dockerfile will be used to build application services, satisfying course requirements.
+Both services will be defined and connected using a `docker-compose.yml` file, with proper dependency ordering, health checks, and networking.
 
-## Project Status
-
-This repository is structured to be CloudLab-ready and serves as the foundation for future enhancements, including CI/CD automation, container security hardening, and registry-based deployments.
-
-
-
+This project will be fully containerized — no direct installations.  
+Final demonstration will run on **CloudLab**.
