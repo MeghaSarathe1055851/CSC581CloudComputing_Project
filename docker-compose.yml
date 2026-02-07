@@ -1,10 +1,22 @@
-version: "3.9"
+version: '3.9'
 
 services:
-  producer:
-    build: ./Producer
-    container_name: log-producer
+  api:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - MONGO_URI=mongodb://db:27017/recipes
 
-  consumer:
-    build: ./Consumer
-    container_name: log-consumer
+  db:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
