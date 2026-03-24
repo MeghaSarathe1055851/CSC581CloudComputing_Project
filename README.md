@@ -61,7 +61,9 @@ The backend service is containerized using a custom Dockerfile located in the `b
 
 The Dockerfile uses:
 
+```dockerfile
 FROM golang:1.22-alpine
+```
 
 The golang:alpine image was selected for the following reasons:
 
