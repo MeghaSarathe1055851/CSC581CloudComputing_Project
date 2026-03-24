@@ -74,6 +74,7 @@ The golang:alpine image was selected for the following reasons:
 
 
 ## Dockerfile Line-by-Line Explanation
+```dockerfile
 FROM golang:1.22-alpine
 WORKDIR /app
 COPY go.mod ./
@@ -82,26 +83,33 @@ COPY . .
 RUN go build -o recipe-engine
 EXPOSE 8080
 CMD ["./recipe-engine"]
-
+```
 
 Explanation:
 
-FROM golang:1.22-alpine
+- FROM golang:1.22-alpine
 Defines the base image containing the Go toolchain.
-WORKDIR /app
+
+- WORKDIR /app
 Sets the working directory inside the container.
-COPY go.mod ./
+
+- COPY go.mod ./
 Copies the Go module definition file first to leverage Docker layer caching.
-RUN go mod download
+
+- RUN go mod download
 Downloads all Go dependencies before copying the full source code.
 This improves build efficiency and reduces rebuild time.
-COPY . .
+
+- COPY . .
 Copies the remaining source code into the container.
-RUN go build -o recipe-engine
+
+- RUN go build -o recipe-engine
 Compiles the Go application into a binary executable.
-EXPOSE 8080
+
+- EXPOSE 8080
 Documents that the container listens on port 8080.
-CMD ["./recipe-engine"]
+
+- CMD ["./recipe-engine"]
 Specifies the default command that runs when the container starts.
 
 ### Networking
@@ -110,7 +118,7 @@ Docker Compose automatically creates a dedicated bridge network when the applica
 
 When running:
 
-docker compose up
+`docker compose up`
 
 Docker performs the following:
 
@@ -124,7 +132,7 @@ Containers communicate using their service names as hostnames.
 
 For example, the backend connects to MongoDB using:
 
-mongodb:27017
+`mongodb:27017`
 
 Docker automatically resolves mongodb to the correct container IP address.
 
