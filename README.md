@@ -61,18 +61,18 @@ The backend service is containerized using a custom Dockerfile located in the `b
 
 The Dockerfile uses:
 
-```dockerfile
+``` dockerfile
 FROM golang:1.22-alpine ```
 
 The golang:alpine image was selected for the following reasons:
 
-It is lightweight compared to full Linux distributions.
-It includes the complete Go compiler and build toolchain.
-Alpine Linux significantly reduces overall container size.
-It is commonly used in production-grade microservice architectures.
+- It is lightweight compared to full Linux distributions.
+- It includes the complete Go compiler and build toolchain.
+- Alpine Linux significantly reduces overall container size.
+- It is commonly used in production-grade microservice architectures.
 
 
-### Dockerfile Line-by-Line Explanation
+## Dockerfile Line-by-Line Explanation
 FROM golang:1.22-alpine
 WORKDIR /app
 COPY go.mod ./
