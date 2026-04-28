@@ -17,7 +17,10 @@ var client *mongo.Client
 func main() {
 
 	// MongoDB connection string
-	mongoURI := "mongodb://mongodb:27017"
+	mongoURI := os.Getenv("MONGO_URI")
+    if mongoURI == "" {
+       log.Fatal("MONGO_URI environment variable not set")
+}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
