@@ -6,9 +6,15 @@ services:
     environment:
       - MONGO_URI=mongodb://db:27017/recipes
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: mongo:7.0
     ports:
       - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
