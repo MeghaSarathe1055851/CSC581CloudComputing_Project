@@ -9,7 +9,7 @@ RUN go mod download
 COPY . .
 RUN go build -o recipe-engine
 
-# Final Runtime Stage
+# Runtime Stage
 FROM alpine:3.20
 
 WORKDIR /app
