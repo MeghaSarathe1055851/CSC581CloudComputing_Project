@@ -1,25 +1,27 @@
 # CSC581 – Cloud Computing Project  
 # Personalized Recipe Suggestion Engine
 
-A containerized microservice that suggests recipes based on a list of available ingredients.  
-Built with **Go** (backend API) + **MongoDB** (recipe storage), orchestrated using Docker Compose.
+## Overview
+
+The Personalized Recipe Suggestion Engine is a containerized microservice-based application designed to suggest recipes based on user-provided ingredients. The system is implemented using the Go programming language for the backend API and MongoDB for persistent storage. Docker and Docker Compose are used to containerize and orchestrate the services, enabling consistent deployment both locally and on CloudLab.
+
+The project demonstrates key cloud computing concepts including service isolation, container networking, environment-based configuration, multi-stage builds, and database-backed microservice communication.
 
 ---
 
-## Vision
+## System Architecture
 
-The system consists of two main components:
+The application follows a two-tier microservice architecture composed of:
+- A backend API service implemented in Go.
+- A MongoDB database service for structured recipe storage.
 
-- **Go Backend API**  
-  A custom HTTP server that exposes a REST endpoint (e.g., `POST /recipes/suggest`).  
-  It receives a list of ingredients from the client and returns a list of matching recipe suggestions.
+The backend exposes REST endpoints that accept ingredient lists and return matching recipes. The MongoDB service stores recipe documents containing fields such as name, ingredients, and cooking instructions. The backend communicates with MongoDB using the official MongoDB Go driver over TCP via Docker’s internal bridge network.
 
-- **MongoDB Database**  
-  Stores a collection of recipes (name, ingredients, instructions, tags, etc.).
+When deployed using Docker Compose, both containers are attached to an isolated virtual network. Docker provides built-in DNS-based service discovery, allowing the backend container to reference MongoDB using the service hostname `db`. This eliminates the need for hard-coded IP addresses and mirrors real-world cloud-native deployments.
 
-**How they communicate:**  
-The Go backend connects to MongoDB using the official MongoDB Go driver over TCP (default port 27017).  
-All interaction is done via the standard MongoDB protocol over Docker's internal bridge network.
+The architecture intentionally separates compute (API logic) from storage (database), reflecting best practices in distributed systems and modern cloud platforms.
+
+
 
 ### Architecture Diagram
 ![Architecture Diagram](docs/architecture.png)
@@ -28,123 +30,73 @@ All interaction is done via the standard MongoDB protocol over Docker's internal
 
 ---
 
-## Proposal
+## Containerization Strategy
 
-### Planned Components and Base Images
+The backend service is containerized using a custom Dockerfile located in the backend/ directory. The Dockerfile uses a multi-stage build process to optimize image size and improve security.
 
-- **Go Backend**
-  - Base image: `golang:1.22-alpine`
-  - Approach: Custom Dockerfile that compiles and runs the Go application inside a container.
-  - Reason:
-    - Lightweight image
-    - Includes full Go toolchain
-    - Alpine Linux reduces container size and attack surface
+The build stage uses the `golang:1.22-alpine` base image, which includes the full Go toolchain within a lightweight Alpine Linux distribution. Dependencies are downloaded using Go modules, and the application is compiled into a standalone binary.
 
-- **MongoDB**
-  - Base image: `mongo:7.0` (official Docker image)
-  - Reason:
-    - Stable and widely used production image
-    - Actively maintained
-    - Standard choice for MongoDB deployments
+The runtime stage uses a minimal Alpine image. Only the compiled binary is copied into this final stage, significantly reducing the attack surface and overall container size. This approach reflects industry-standard container hardening practices.
 
-Both services are defined and connected using a `docker-compose.yml` file.  
-The entire system is fully containerized — no direct installations are required.
+MongoDB is deployed using the official `mongo:7.0` image, which is widely adopted in production systems and actively maintained by MongoDB.
 
-Final demonstration will run on **CloudLab**.
+## Networking Model
+
+Docker Compose automatically creates a dedicated bridge network when the application is started. Both the API and MongoDB services are attached to this network.
+
+Within this environment:
+
+- The backend connects to MongoDB using the hostname `db`.
+- Communication occurs over port 27017 inside the private network.
+- `Port 8080` is published to the host machine to allow external HTTP access.
+- `Port 27017` may optionally be exposed for development and debugging purposes.
+
+This setup simulates real cloud networking principles where services communicate internally within a private network while selectively exposing only required endpoints.
+
+## Application Workflow
+
+When the system starts, the backend attempts to establish a connection to MongoDB using an environment variable `(MONGO_URI)`. A retry mechanism ensures the database is available before serving traffic.
+
+If the recipe collection is empty, the system automatically seeds default recipes such as Tomato Pasta, Apple Pie, Vanilla Cake, and Dandan Noodles. This guarantees deterministic behavior during demonstrations.
+
+When a client sends a `POST /recipes/suggest` request containing a list of ingredients, the backend constructs a MongoDB query using the `$all` operator. This ensures that only recipes containing all provided ingredients are returned. The matching recipe document, including its cooking instructions, is serialized as JSON and sent back to the client.
+
+This interaction demonstrates real database querying rather than static response generation, strengthening the system’s academic value
 
 
 ## Build Process
 
-The backend service is containerized using a custom Dockerfile located in the `backend/` directory.
+The backend container is built using Docker’s layered image system. Dependency files are copied first to leverage layer caching, improving rebuild performance. The Go compiler produces a static binary which is then executed as the container’s entry point.
 
-### Base Image Selection
+The use of a multi-stage build reduces the final image size while maintaining a clean separation between build-time and runtime environments. This design aligns with production-grade container practices.
 
-The Dockerfile uses:
+## Deployment on CloudLab
 
-```dockerfile
-FROM golang:1.22-alpine
-```
+The application is fully compatible with CloudLab environments. Deployment requires:
+- Installing Docker on the CloudLab node.
+- Cloning the repository.
+- Running `docker-compose up --build`.
 
-The golang:alpine image was selected for the following reasons:
+Docker Compose handles network creation, container startup order, and health checks. Once deployed, the system can be validated using standard HTTP requests via `curl`.
 
-- It is lightweight compared to full Linux distributions.
-- It includes the complete Go compiler and build toolchain.
-- Alpine Linux significantly reduces overall container size.
-- It is commonly used in production-grade microservice architectures.
+This deployment approach ensures portability and reproducibility across different infrastructure environments.
 
+## Design Considerations
 
-## Dockerfile Line-by-Line Explanation
-```dockerfile
-FROM golang:1.22-alpine
-WORKDIR /app
-COPY go.mod ./
-RUN go mod download
-COPY . .
-RUN go build -o recipe-engine
-EXPOSE 8080
-CMD ["./recipe-engine"]
-```
+The system was designed with the following cloud computing principles in mind:
 
-Explanation:
+Service isolation through containerization
+Stateless API logic with externalized state
+Environment-based configuration
+Lightweight and optimized container images
+Internal service discovery using DNS
+Production-style database querying
 
-- FROM golang:1.22-alpine -
-Defines the base image containing the Go toolchain.
+The separation of application logic and persistent storage makes the architecture extensible and adaptable to orchestration platforms such as Kubernetes.
 
-- WORKDIR /app -
-Sets the working directory inside the container.
+## Conclusion
 
-- COPY go.mod ./ -
-Copies the Go module definition file first to leverage Docker layer caching.
+This project demonstrates a fully containerized microservice architecture deployed using Docker Compose and validated on CloudLab. It integrates real-time database querying with RESTful API design while adhering to cloud-native best practices.
 
-- RUN go mod download -
-Downloads all Go dependencies before copying the full source code.
-This improves build efficiency and reduces rebuild time.
+The Personalized Recipe Suggestion Engine reflects foundational distributed systems concepts including container networking, service discovery, environment-based configuration, and infrastructure portability. The final system is production-structured, academically rigorous, and aligned with modern cloud computing standards.
 
-- COPY . . -
-Copies the remaining source code into the container.
-
-- RUN go build -o recipe-engine -
-Compiles the Go application into a binary executable.
-
-- EXPOSE 8080 -
-Documents that the container listens on port 8080.
-
-- CMD ["./recipe-engine"] -
-Specifies the default command that runs when the container starts.
-
-### Networking
-
-Docker Compose automatically creates a dedicated bridge network when the application is started.
-
-When running:
-
-`docker compose up`
-
-Docker performs the following:
-
-Creates a private bridge network.
-Attaches both backend and mongodb containers to this network.
-Provides built-in DNS resolution.
-
-### Inter-Container Communication
-
-Containers communicate using their service names as hostnames.
-
-For example, the backend connects to MongoDB using:
-
-`mongodb:27017`
-
-Docker automatically resolves mongodb to the correct container IP address.
-
-This eliminates the need to manually manage IP addresses and simulates real-world microservice communication.
-
-### Port Publishing
-
-The docker-compose.yml file exposes:
-
-8080:8080 → Allows external access to the backend API.
-27017:27017 → Allows access to MongoDB for development and testing.
-
-Internally, containers communicate through the private bridge network without exposing traffic to the host system.
-
-This architecture mirrors real-world containerized deployments in Kubernetes and cloud platforms.
